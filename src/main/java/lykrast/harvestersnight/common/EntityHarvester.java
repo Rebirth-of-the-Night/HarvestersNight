@@ -51,7 +51,7 @@ public class EntityHarvester extends EntityMob {
         experienceValue = 50;
         moveHelper = new AIMoveControl(this);
 	}
-	
+
 	//If you look carefully it is very similar to the Mourner from Defiled Lands
 	//Which already had a lot of stuff from Vexes
 	@Override
@@ -93,7 +93,7 @@ public class EntityHarvester extends EntityMob {
         noClip = false;
         setNoGravity(true);
     }
-	
+
 	@Override
 	public void onLivingUpdate() {
 		//Disappear in sunlight when it has no attack target
@@ -133,7 +133,7 @@ public class EntityHarvester extends EntityMob {
 		super.updateAITasks();
 		bossInfo.setPercent(getHealth() / getMaxHealth());
     }
-	
+
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
 		//Triple damage from fire
@@ -141,7 +141,7 @@ public class EntityHarvester extends EntityMob {
 			amount *= 3;
 		return super.attackEntityFrom(source, amount);
     }
-	
+
 	@Override
 	public boolean getCanSpawnHere() {
 		return ArrayUtils.contains(HarvestersNightConfig.dimList, world.provider.getDimension()) == HarvestersNightConfig.whiteList
@@ -150,16 +150,16 @@ public class EntityHarvester extends EntityMob {
 				&& world.canSeeSky(new BlockPos(posX, posY + getEyeHeight(), posZ))
 				&& super.getCanSpawnHere();
 	}
-	
+
 	@Override
     @Nullable
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata) {
 		setEquipmentBasedOnDifficulty(difficulty);
 		//setEnchantmentBasedOnDifficulty(difficulty);
-		
+
         if (HarvestersNightConfig.lightning) world.addWeatherEffect(new EntityLightningBolt(world, posX, posY, posZ, true));
         if (HarvestersNightConfig.laugh) playSound(HarvestersNight.harvesterSpawn, 8, 1);
-		
+
 		return super.onInitialSpawn(difficulty, livingdata);
 	}
 
@@ -185,13 +185,13 @@ public class EntityHarvester extends EntityMob {
 	public boolean isNonBoss() {
 		return !HarvestersNightConfig.isBoss;
 	}
-	
+
 	@Override
 	public void setCustomNameTag(String name) {
 		super.setCustomNameTag(name);
 		bossInfo.setName(getDisplayName());
 	}
-	
+
 	@Override
     @Nullable
     protected ResourceLocation getLootTable() {
@@ -217,7 +217,7 @@ public class EntityHarvester extends EntityMob {
 	protected SoundEvent getDeathSound() {
 		return HarvestersNight.harvesterDie;
 	}
-	
+
 	private boolean getHarvesterFlag(int mask) {
         int i = dataManager.get(FLAGS);
         return (i & mask) != 0;
@@ -245,7 +245,7 @@ public class EntityHarvester extends EntityMob {
     public void setCasting(boolean value) {
         setHarvesterFlag(2, value);
     }
-	
+
 	//Damn it Majong and your inner classes
 	//Bunch of stuff copied from Vexes (and also from the Mourner)
 	private static class AIMoveControl extends EntityMoveHelper
@@ -292,7 +292,7 @@ public class EntityHarvester extends EntityMob {
             }
         }
     }
-	
+
 	private static class AIMoveRandom extends EntityAIBase
     {
 		private EntityHarvester harvester;
@@ -333,7 +333,7 @@ public class EntityHarvester extends EntityMob {
 			}
 		}
     }
-	
+
 	private static class AIChargeAttack extends EntityAIBase
     {
 		private EntityHarvester harvester;
@@ -388,7 +388,7 @@ public class EntityHarvester extends EntityMob {
 			}
 		}
 	}
-	
+
 	private static class AIClawAttack extends EntityAIBase
     {
 		private EntityHarvester harvester;
@@ -438,9 +438,11 @@ public class EntityHarvester extends EntityMob {
 			//Attack
 			if (phase == 1 && time % 10 == 0) {
 				if (target != null && target.isEntityAlive()) {
-					double yMin = target.onGround ? target.posY - 1 : target.posY - 3;
+//					double yMin = target.onGround ? target.posY - 1 : target.posY - 3;
+					double yMin = target.posY;
 		            float f = (float)MathHelper.atan2(target.posZ - harvester.posZ, target.posX - harvester.posX);
-					spawnFangs(target.posX, target.posZ, yMin, target.posY + 1, f, 0);
+//					spawnFangs(target.posX, target.posZ, yMin, target.posY + 1, f, 0);
+					spawnFangs(target.posX, target.posZ, yMin, target.posY, f, 0);
 				}
 			}
 			//Change phase
@@ -451,7 +453,7 @@ public class EntityHarvester extends EntityMob {
 			}
 			harvester.getLookHelper().setLookPositionWithEntity(target, 10, 10);
 		}
-		
+
 		//Adapted from the Evoker
 		private void spawnFangs(double x, double z, double yMin, double yStart, float yaw, int delayTick) {
             BlockPos blockpos = new BlockPos(x, yStart, z);
@@ -460,7 +462,9 @@ public class EntityHarvester extends EntityMob {
 
             while (true)
             {
+            	// this line checks if the block below is a full block and the block at pos is not full
                 if (!harvester.world.isBlockNormalCube(blockpos, true) && harvester.world.isBlockNormalCube(blockpos.down(), true))
+//                if (true)
                 {
                     if (!harvester.world.isAirBlock(blockpos))
                     {
@@ -479,17 +483,16 @@ public class EntityHarvester extends EntityMob {
 
                 blockpos = blockpos.down();
 
-                if (blockpos.getY() < MathHelper.floor(yMin) - 1)
+//                if (blockpos.getY() < MathHelper.floor(yMin) - 1)
+                if (blockpos.getY() < MathHelper.floor(yMin))
                 {
                     break;
                 }
             }
 
-            if (flag)
-            {
-                EntityEvokerFangs entityevokerfangs = new EntityEvokerFangs(harvester.world, x, (double)blockpos.getY() + d0, z, yaw, delayTick, harvester);
-                harvester.world.spawnEntity(entityevokerfangs);
-            }
+
+            EntityEvokerFangs entityevokerfangs = new EntityEvokerFangs(harvester.world, x, flag ? ((double)blockpos.getY() + d0) : yStart, z, yaw, delayTick, harvester);
+            harvester.world.spawnEntity(entityevokerfangs);
         }
 	}
 
