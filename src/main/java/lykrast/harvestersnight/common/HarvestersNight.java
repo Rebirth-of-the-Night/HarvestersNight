@@ -59,7 +59,7 @@ public class HarvestersNight {
 				ToolMaterial.IRON.getEnchantability());
 		harvesterScythe = new ItemHarvesterScythe(harvesterMaterial)
 				.setRegistryName(new ResourceLocation(MODID, "harvester_scythe"))
-				.setUnlocalizedName(MODID + ".harvester_scythe")
+				.setTranslationKey(MODID + ".harvester_scythe")
 				.setCreativeTab(CreativeTabs.TOOLS);
 		event.getRegistry().register(harvesterScythe);
 	}

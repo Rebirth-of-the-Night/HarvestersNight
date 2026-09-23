@@ -109,7 +109,7 @@ public class ItemHarvesterScythe extends ItemSword {
 		}
 		if (!world.isRemote) {
 			if (block.removedByPlayer(state, world, pos, player, !player.capabilities.isCreativeMode)) {
-				block.onBlockDestroyedByPlayer(world, pos, state);
+				block.onBlockHarvested(world, pos, state, player);
 				if (!player.capabilities.isCreativeMode) {
 					block.harvestBlock(world, player, pos, state, world.getTileEntity(pos), player.getHeldItemMainhand());
 					if (xpToDrop > 0) {
@@ -121,7 +121,7 @@ public class ItemHarvesterScythe extends ItemSword {
 			playerMP.connection.sendPacket(new SPacketBlockChange(world, pos));
 		} else {
 			if (block.removedByPlayer(state, world, pos, player, !player.capabilities.isCreativeMode)) {
-				block.onBlockDestroyedByPlayer(world, pos, state);
+				block.onBlockHarvested(world, pos, state, player);
 			}
 			Minecraft.getMinecraft().getConnection().sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, pos, Minecraft.getMinecraft().objectMouseOver.sideHit));
 		}

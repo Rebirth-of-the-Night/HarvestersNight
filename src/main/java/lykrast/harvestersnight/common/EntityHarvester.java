@@ -2,6 +2,8 @@ package lykrast.harvestersnight.common;
 
 import javax.annotation.Nullable;
 
+
+import net.minecraft.util.text.TextComponentString;
 import org.apache.commons.lang3.ArrayUtils;
 
 import net.minecraft.block.state.IBlockState;
@@ -40,14 +42,24 @@ import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+
 public class EntityHarvester extends EntityMob {
 	public static final ResourceLocation LOOT = new ResourceLocation(HarvestersNight.MODID, "entities/harvester");
-    protected static final DataParameter<Byte> FLAGS = EntityDataManager.<Byte>createKey(EntityHarvester.class, DataSerializers.BYTE);
-    private final BossInfoServer bossInfo = new BossInfoServer(getDisplayName(), BossInfo.Color.YELLOW, BossInfo.Overlay.PROGRESS);
+    protected static final DataParameter<Integer> CURRENT_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
+	protected static final DataParameter<Integer> PREV_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
+	private final BossInfoServer bossInfo = new BossInfoServer(getDisplayName(), BossInfo.Color.YELLOW, BossInfo.Overlay.PROGRESS);
+	private float chargeMultiplier = 1;
+	private float fangSpeed = 1;
+	private float fangDuration = 1;
+	private float tauntLength = 1;
+	private float circleSpeed = 1;
+
 
 	public EntityHarvester(World worldIn) {
 		super(worldIn);
-        setSize(0.6F, 1.95F);
+        setSize(0.6F, 2.8F);
         experienceValue = 50;
         moveHelper = new AIMoveControl(this);
 	}
@@ -57,9 +69,11 @@ public class EntityHarvester extends EntityMob {
 	@Override
 	protected void initEntityAI() {
         tasks.addTask(1, new EntityAISwimming(this));
-        tasks.addTask(3, new AIClawAttack(this));
-        tasks.addTask(4, new AIChargeAttack(this));
-        tasks.addTask(8, new AIMoveRandom(this));
+		//tasks.addTask(2, new AICircleAttack(this));
+		tasks.addTask(3, new AIChargeAttack(this));
+        tasks.addTask(4, new AIClawAttack(this));
+        //tasks.addTask(5, new AITaunt(this));
+		//tasks.addTask(6, new AISummon(this));
         tasks.addTask(9, new EntityAIWatchClosest(this, EntityPlayer.class, 3.0F, 1.0F));
         tasks.addTask(10, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
     	targetTasks.addTask(1, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, false));
@@ -72,12 +86,14 @@ public class EntityHarvester extends EntityMob {
         getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
         //getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(8.0D);
         getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(100.0D);
+		getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.8D);
     }
 
 	@Override
     protected void entityInit() {
         super.entityInit();
-        dataManager.register(FLAGS, (byte)0);
+        dataManager.register(CURRENT_STATE, -1);
+		dataManager.register(PREV_STATE, -1);
     }
 
 	@Override
@@ -125,6 +141,14 @@ public class EntityHarvester extends EntityMob {
                 if (flag) setDead();
             }
         }
+
+		if(this.getHealth() <= this.getMaxHealth()/2){
+			chargeMultiplier = 1.3F;
+			fangSpeed = 0.6F;
+			fangDuration = 1.5F;
+			tauntLength = 0.6F;
+			circleSpeed = 1.3F;
+		}
 		super.onLivingUpdate();
 	}
 
@@ -218,33 +242,73 @@ public class EntityHarvester extends EntityMob {
 		return HarvestersNight.harvesterDie;
 	}
 
-	private boolean getHarvesterFlag(int mask) {
-        int i = dataManager.get(FLAGS);
-        return (i & mask) != 0;
+	private boolean getHarvesterState(int state) {
+        int i = dataManager.get(CURRENT_STATE);
+		if (i == state) return true;
+		else return false;
     }
 
-    private void setHarvesterFlag(int mask, boolean value) {
-        int i = dataManager.get(FLAGS);
-
-        if (value) i |= mask;
-        else i &= ~mask;
-
-        dataManager.set(FLAGS, (byte)(i & 255));
+    private void setHarvesterState(int state) {
+        dataManager.set(CURRENT_STATE, state);
     }
+
+	private boolean getHarvesterPrevState(int state) {
+		int i = dataManager.get(PREV_STATE);
+		if (i == state) return true;
+		else return false;
+	}
+
+	private void setHarvesterPrevState(int state) {
+		dataManager.set(PREV_STATE, state);
+	}
+
+	public void resetState(){
+		setHarvesterState(-1);
+	}
+
+	public boolean isIdle(){
+		return getHarvesterState(-1);
+	}
 
     public boolean isCharging() {
-        return getHarvesterFlag(1);
+        return getHarvesterState(1);
     }
-    public void setCharging(boolean value) {
-        setHarvesterFlag(1, value);
+    public void setCharging() {
+        setHarvesterState(1);
     }
 
-    public boolean isCasting() {
-        return getHarvesterFlag(2);
-    }
-    public void setCasting(boolean value) {
-        setHarvesterFlag(2, value);
-    }
+	public boolean isCasting() {
+		return getHarvesterState(2);
+	}
+	public void setCasting() {
+		setHarvesterState(2);
+	}
+
+	public boolean wasCharging() {
+		return getHarvesterPrevState(1);
+	}
+	public void setWasCharging() {
+		setHarvesterPrevState(1);
+	}
+
+	public boolean wasCasting() {
+		return getHarvesterPrevState(2);
+	}
+	public void setWasCasting() {
+		setHarvesterPrevState(2);
+	}
+
+
+	public void teleportRandomRadius(double radius, double height){
+		EntityLivingBase target = this.getAttackTarget();
+
+		double angle = this.rand.nextInt(360) * this.rand.nextDouble();
+		double x = radius * cos(angle);
+		double z = radius * sin(angle);
+
+		this.setPositionAndUpdate(target.posX + x, target.posY + height, target.posZ + z);
+	}
+
 
 	//Damn it Majong and your inner classes
 	//Bunch of stuff copied from Vexes (and also from the Mourner)
@@ -293,60 +357,23 @@ public class EntityHarvester extends EntityMob {
         }
     }
 
-	private static class AIMoveRandom extends EntityAIBase
-    {
-		private EntityHarvester harvester;
-
-		public AIMoveRandom(EntityHarvester mourner) {
-			this.setMutexBits(1);
-			this.harvester = mourner;
-		}
-
-		@Override
-		public boolean shouldExecute() {
-			return !harvester.getMoveHelper().isUpdating() && harvester.rand.nextInt(7) == 0;
-		}
-
-		@Override
-		public boolean shouldContinueExecuting() {
-			return false;
-		}
-
-		@Override
-		public void updateTask() {
-			BlockPos blockpos;
-			if (harvester.getAttackTarget() != null && harvester.getAttackTarget().isEntityAlive()) blockpos = new BlockPos(harvester.getAttackTarget());
-			else blockpos = new BlockPos(harvester);
-			for (int i = 0; i < 3; ++i)
-			{
-				BlockPos blockpos1 = blockpos.add(harvester.rand.nextInt(15) - 7, harvester.rand.nextInt(11) - 5, harvester.rand.nextInt(15) - 7);
-
-				if (harvester.world.isAirBlock(blockpos1)) {
-					harvester.moveHelper.setMoveTo(blockpos1.getX() + 0.5D, blockpos1.getY() + 0.5D, blockpos1.getZ() + 0.5D, 0.25);
-
-					if (harvester.getAttackTarget() == null) {
-						harvester.getLookHelper().setLookPosition(blockpos1.getX() + 0.5D, blockpos1.getY() + 0.5D, blockpos1.getZ() + 0.5D, 180.0F, 20.0F);
-					}
-
-					break;
-				}
-			}
-		}
-    }
-
 	private static class AIChargeAttack extends EntityAIBase
     {
+		private int phase;
+		private float time;
 		private EntityHarvester harvester;
 
 		public AIChargeAttack(EntityHarvester harvester) {
 			setMutexBits(1);
 			this.harvester = harvester;
+			time = 0;
+			phase = 0;
 		}
 
 		@Override
 		public boolean shouldExecute() {
-			if (harvester.getAttackTarget() != null && !harvester.getMoveHelper().isUpdating() && harvester.rand.nextInt(4) == 0) {
-				return harvester.getDistanceSq(harvester.getAttackTarget()) > 4.0D;
+			if (harvester.getAttackTarget() != null && !harvester.wasCharging() && harvester.isIdle()) {
+				return true;
 			} else {
 				return false;
 			}
@@ -354,37 +381,45 @@ public class EntityHarvester extends EntityMob {
 
 		@Override
 		public boolean shouldContinueExecuting() {
-			return harvester.getMoveHelper().isUpdating() && harvester.isCharging() && harvester.getAttackTarget() != null && harvester.getAttackTarget().isEntityAlive();
+			return harvester.isCharging() && harvester.getAttackTarget() != null && harvester.getAttackTarget().isEntityAlive();
 		}
 
 		@Override
 		public void startExecuting() {
-			EntityLivingBase entitylivingbase = harvester.getAttackTarget();
-			Vec3d vec3d = entitylivingbase.getPositionEyes(1.0F);
-			harvester.moveHelper.setMoveTo(vec3d.x, vec3d.y, vec3d.z, 1.0);
-			harvester.setCharging(true);
+			harvester.setCharging();
+			harvester.teleportRandomRadius(12, 4);
+			time = 20;
+			phase = 0;
 			harvester.playSound(HarvestersNight.harvesterCharge, 1.0F, 1.0F);
 		}
 
 		@Override
 		public void resetTask() {
-			harvester.setCharging(false);
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isCharging())));
+			harvester.resetState();
+			harvester.setWasCharging();
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.wasCharging())));
+			time = 0;
+			phase = 0;
 		}
 
 		@Override
 		public void updateTask() {
 			EntityLivingBase entitylivingbase = harvester.getAttackTarget();
-
-			if (harvester.getEntityBoundingBox().grow(0.5).intersects(entitylivingbase.getEntityBoundingBox())) {
+			time--;
+			if(phase == 0 && time == 0){
+				Vec3d vec3d = entitylivingbase.getPositionEyes(1.0F);
+				harvester.moveHelper.setMoveTo(vec3d.x, vec3d.y, vec3d.z, 1.5 * harvester.chargeMultiplier);
+				phase = 1;
+			}
+			if (harvester.getEntityBoundingBox().grow(0.8).intersects(entitylivingbase.getEntityBoundingBox())) {
 				harvester.attackEntityAsMob(entitylivingbase);
-				harvester.setCharging(false);
-			} else {
-				double d0 = harvester.getDistanceSq(entitylivingbase);
-
-				if (d0 < 9.0D) {
-					Vec3d vec3d = entitylivingbase.getPositionEyes(1.0F);
-					harvester.moveHelper.setMoveTo(vec3d.x, vec3d.y - 1, vec3d.z, 1.0);
-				}
+				harvester.resetState();
+			}
+			if (time <= -100){
+				harvester.resetState();
 			}
 		}
 	}
@@ -393,7 +428,8 @@ public class EntityHarvester extends EntityMob {
     {
 		private EntityHarvester harvester;
 		//Phase 0 = startup, 1 = attack, 2 = ending
-		private int time, phase;
+		private int phase;
+		private float time;
 
 		public AIClawAttack(EntityHarvester harvester) {
 			setMutexBits(1);
@@ -404,8 +440,8 @@ public class EntityHarvester extends EntityMob {
 
 		@Override
 		public boolean shouldExecute() {
-			if (harvester.getAttackTarget() != null && !harvester.getMoveHelper().isUpdating() && harvester.rand.nextInt(5) == 0) {
-				return harvester.getDistanceSq(harvester.getAttackTarget()) > 4.0D;
+			if (harvester.getAttackTarget() != null && !harvester.wasCasting() && harvester.isIdle()) {
+				return true;
 			} else {
 				return false;
 			}
@@ -418,15 +454,22 @@ public class EntityHarvester extends EntityMob {
 
 		@Override
 		public void startExecuting() {
-			harvester.setCasting(true);
+			harvester.teleportRandomRadius(harvester.rand.nextInt(3) + 7, 7);
+			harvester.setMoveVertical(0);
+			harvester.setMoveForward(0);
+			harvester.setCasting();
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isCasting())));
 			harvester.playSound(HarvestersNight.harvesterSpell, 1.0F, 1.0F);
-			time = 10;
+			time = 50;
 			phase = 0;
 		}
 
 		@Override
 		public void resetTask() {
-			harvester.setCasting(false);
+			harvester.resetState();
+			harvester.setWasCasting();
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
+			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.wasCasting())));
 			time = 0;
 			phase = 0;
 		}
@@ -436,19 +479,19 @@ public class EntityHarvester extends EntityMob {
 			EntityLivingBase target = harvester.getAttackTarget();
 			time--;
 			//Attack
-			if (phase == 1 && time % 10 == 0) {
+			if (phase == 1 && time % (10 * harvester.fangSpeed) == 0) {
 				if (target != null && target.isEntityAlive()) {
-//					double yMin = target.onGround ? target.posY - 1 : target.posY - 3;
 					double yMin = target.posY;
 		            float f = (float)MathHelper.atan2(target.posZ - harvester.posZ, target.posX - harvester.posX);
-//					spawnFangs(target.posX, target.posZ, yMin, target.posY + 1, f, 0);
 					spawnFangs(target.posX, target.posZ, yMin, target.posY, f, 0);
 				}
 			}
 			//Change phase
 			if (time <= 0 && phase < 3) {
-				if (phase == 0) time = 60 + harvester.rand.nextInt(5)*10;
-				else if (phase == 1) time = 30;
+				if (phase == 0) {
+					time = Math.round((60 + harvester.rand.nextInt(5)*10) * harvester.fangDuration);
+				}
+				else if (phase == 1) time = 50;
 				phase++;
 			}
 			harvester.getLookHelper().setLookPositionWithEntity(target, 10, 10);
@@ -462,9 +505,7 @@ public class EntityHarvester extends EntityMob {
 
             while (true)
             {
-            	// this line checks if the block below is a full block and the block at pos is not full
                 if (!harvester.world.isBlockNormalCube(blockpos, true) && harvester.world.isBlockNormalCube(blockpos.down(), true))
-//                if (true)
                 {
                     if (!harvester.world.isAirBlock(blockpos))
                     {
@@ -482,8 +523,6 @@ public class EntityHarvester extends EntityMob {
                 }
 
                 blockpos = blockpos.down();
-
-//                if (blockpos.getY() < MathHelper.floor(yMin) - 1)
                 if (blockpos.getY() < MathHelper.floor(yMin))
                 {
                     break;
