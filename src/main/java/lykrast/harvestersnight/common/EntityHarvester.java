@@ -49,6 +49,8 @@ public class EntityHarvester extends EntityMob {
 	public static final ResourceLocation LOOT = new ResourceLocation(HarvestersNight.MODID, "entities/harvester");
     protected static final DataParameter<Integer> CURRENT_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
 	protected static final DataParameter<Integer> PREV_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
+	protected static final DataParameter<Integer> ANIM_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
+
 	private final BossInfoServer bossInfo = new BossInfoServer(getDisplayName(), BossInfo.Color.YELLOW, BossInfo.Overlay.PROGRESS);
 	private float chargeMultiplier = 1;
 	private float fangSpeed = 1;
@@ -84,7 +86,6 @@ public class EntityHarvester extends EntityMob {
     protected void applyEntityAttributes() {
         super.applyEntityAttributes();
         getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
-        //getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(8.0D);
         getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(100.0D);
 		getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.8D);
     }
@@ -94,6 +95,7 @@ public class EntityHarvester extends EntityMob {
         super.entityInit();
         dataManager.register(CURRENT_STATE, -1);
 		dataManager.register(PREV_STATE, -1);
+		dataManager.register(ANIM_STATE, -1);
     }
 
 	@Override
@@ -242,15 +244,29 @@ public class EntityHarvester extends EntityMob {
 		return HarvestersNight.harvesterDie;
 	}
 
+	private void setHarvesterAnimation(int state){
+		dataManager.set(ANIM_STATE, state);
+	}
+
+	private boolean getHarvesterAnimation(int state) {
+		int i = dataManager.get(ANIM_STATE);
+		if (i == state) return true;
+		else return false;
+	}
+
+	private void setHarvesterState(int state) {
+		dataManager.set(CURRENT_STATE, state);
+	}
+
 	private boolean getHarvesterState(int state) {
         int i = dataManager.get(CURRENT_STATE);
 		if (i == state) return true;
 		else return false;
     }
 
-    private void setHarvesterState(int state) {
-        dataManager.set(CURRENT_STATE, state);
-    }
+	private void setHarvesterPrevState(int state) {
+		dataManager.set(PREV_STATE, state);
+	}
 
 	private boolean getHarvesterPrevState(int state) {
 		int i = dataManager.get(PREV_STATE);
@@ -258,14 +274,10 @@ public class EntityHarvester extends EntityMob {
 		else return false;
 	}
 
-	private void setHarvesterPrevState(int state) {
-		dataManager.set(PREV_STATE, state);
-	}
-
+	//sets current state
 	public void resetState(){
 		setHarvesterState(-1);
 	}
-
 	public boolean isIdle(){
 		return getHarvesterState(-1);
 	}
@@ -283,7 +295,7 @@ public class EntityHarvester extends EntityMob {
 	public void setCasting() {
 		setHarvesterState(2);
 	}
-
+    // sets previous state
 	public boolean wasCharging() {
 		return getHarvesterPrevState(1);
 	}
@@ -297,7 +309,24 @@ public class EntityHarvester extends EntityMob {
 	public void setWasCasting() {
 		setHarvesterPrevState(2);
 	}
+	//sets animation state
+	public void resetAnimation(){
+		setHarvesterAnimation(-1);
+	}
 
+	public boolean isChargingAnimation() {
+		return getHarvesterAnimation(1);
+	}
+	public void setChargingAnimation() {
+		setHarvesterAnimation(1);
+	}
+
+	public boolean isCastingAnimation() {
+		return getHarvesterAnimation(2);
+	}
+	public void setCastingAnimation() {
+		setHarvesterAnimation(2);
+	}
 
 	public void teleportRandomRadius(double radius, double height){
 		EntityLivingBase target = this.getAttackTarget();
@@ -395,12 +424,9 @@ public class EntityHarvester extends EntityMob {
 
 		@Override
 		public void resetTask() {
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isCharging())));
 			harvester.resetState();
+			harvester.resetAnimation();
 			harvester.setWasCharging();
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.wasCharging())));
 			time = 0;
 			phase = 0;
 		}
@@ -412,11 +438,15 @@ public class EntityHarvester extends EntityMob {
 			if(phase == 0 && time == 0){
 				Vec3d vec3d = entitylivingbase.getPositionEyes(1.0F);
 				harvester.moveHelper.setMoveTo(vec3d.x, vec3d.y, vec3d.z, 1.5 * harvester.chargeMultiplier);
+				harvester.setChargingAnimation();
 				phase = 1;
 			}
-			if (harvester.getEntityBoundingBox().grow(0.8).intersects(entitylivingbase.getEntityBoundingBox())) {
+			if (harvester.getEntityBoundingBox().grow(0.8).intersects(entitylivingbase.getEntityBoundingBox()) && harvester.moveHelper.isUpdating()) {
 				harvester.attackEntityAsMob(entitylivingbase);
 				harvester.resetState();
+			}
+			if (!harvester.moveHelper.isUpdating()){
+				harvester.resetAnimation();
 			}
 			if (time <= -100){
 				harvester.resetState();
@@ -454,13 +484,12 @@ public class EntityHarvester extends EntityMob {
 
 		@Override
 		public void startExecuting() {
-			harvester.teleportRandomRadius(harvester.rand.nextInt(3) + 7, 7);
+			harvester.teleportRandomRadius(harvester.rand.nextInt(3) + 4, 6);
 			harvester.setMoveVertical(0);
 			harvester.setMoveForward(0);
 			harvester.setCasting();
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isCasting())));
 			harvester.playSound(HarvestersNight.harvesterSpell, 1.0F, 1.0F);
-			time = 50;
+			time = 40;
 			phase = 0;
 		}
 
@@ -468,8 +497,6 @@ public class EntityHarvester extends EntityMob {
 		public void resetTask() {
 			harvester.resetState();
 			harvester.setWasCasting();
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.isIdle())));
-			//harvester.getAttackTarget().sendMessage(new TextComponentString(String.valueOf(harvester.wasCasting())));
 			time = 0;
 			phase = 0;
 		}
@@ -490,8 +517,12 @@ public class EntityHarvester extends EntityMob {
 			if (time <= 0 && phase < 3) {
 				if (phase == 0) {
 					time = Math.round((60 + harvester.rand.nextInt(5)*10) * harvester.fangDuration);
+					harvester.setCastingAnimation();
 				}
-				else if (phase == 1) time = 50;
+				else if (phase == 1) {
+					harvester.resetAnimation();
+					time = 50;
+				}
 				phase++;
 			}
 			harvester.getLookHelper().setLookPositionWithEntity(target, 10, 10);

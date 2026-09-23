@@ -1,5 +1,6 @@
 package lykrast.harvestersnight.client;
 
+import lykrast.harvestersnight.common.EntityHarvester;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.GlStateManager;
@@ -39,16 +40,31 @@ public class LayerHarvesterHeldItem implements LayerRenderer<EntityLivingBase> {
 
     private void renderHeldItem(EntityLivingBase entityIn, ItemStack heldItem, ItemCameraTransforms.TransformType cameraTransform, EnumHandSide handSide)
     {
+        EntityHarvester harvester = (EntityHarvester)entityIn;
         if (!heldItem.isEmpty())
         {
-            GlStateManager.pushMatrix();
-            this.translateToHand(handSide);
-            GlStateManager.rotate(180.0F, 1.0F, 0.0F, 0.0F);
-            GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-            boolean flag = handSide == EnumHandSide.LEFT;
-            GlStateManager.translate(0.0F, -0.5F, -0.5F);
-            Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, flag);
-            GlStateManager.popMatrix();
+            if(harvester.isChargingAnimation()){
+                GlStateManager.pushMatrix();
+                this.translateToHand(handSide);
+                GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
+                GlStateManager.rotate(0.0F, 0.0F, 1.0F, 0.0F);
+                GlStateManager.rotate(-15.0F, 0.0F, 0.0F, 1.0F);
+                boolean flag = handSide == EnumHandSide.LEFT;
+                GlStateManager.translate(-0.3F, 0.75F, -1.3F);
+                Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, flag);
+                GlStateManager.popMatrix();
+            }
+            else {
+                GlStateManager.pushMatrix();
+                this.translateToHand(handSide);
+                GlStateManager.rotate(-195.2506F, 1.0F, 0.0F, 0.0F);
+                GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+                GlStateManager.rotate(-15.0F, 0.0F, 0.0F, 1.0F);
+                boolean flag = handSide == EnumHandSide.LEFT;
+                GlStateManager.translate(0.1F, -0.5F, -0.45F);
+                Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, flag);
+                GlStateManager.popMatrix();
+            }
         }
     }
 

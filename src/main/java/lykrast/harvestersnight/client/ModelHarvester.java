@@ -3,6 +3,7 @@ package lykrast.harvestersnight.client;// Made with Blockbench 5.2.1
 // Paste this class into your mod and generate all required imports
 
 
+import lykrast.harvestersnight.common.EntityHarvester;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.ModelBox;
@@ -192,47 +193,23 @@ public class ModelHarvester extends ModelBiped {
     }
 
     public void setRotationAngles(float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor, Entity entityIn)
-    {
-        boolean flag = entityIn instanceof EntityLivingBase && ((EntityLivingBase)entityIn).getTicksElytraFlying() > 4;
+    {   EntityHarvester harvester = (EntityHarvester)entityIn;
         this.head.rotateAngleY = netHeadYaw * 0.017453292F;
-
-        if (flag)
-        {
-            this.head.rotateAngleX = -((float)Math.PI / 4F);
-        }
-        else
-        {
-            this.head.rotateAngleX = headPitch * 0.017453292F;
-        }
+        this.head.rotateAngleX = headPitch * 0.017453292F;
+        this.lowerLeftArm.rotateAngleX = 0;
+        this.lowerRightArm.rotateAngleX = 0;
+        this.lowerRightArm.rotateAngleZ = 0;
 
         this.body.rotateAngleY = 0.0F;
-        float f = 1.0F;
 
-        if (flag)
-        {
-            f = (float)(entityIn.motionX * entityIn.motionX + entityIn.motionY * entityIn.motionY + entityIn.motionZ * entityIn.motionZ);
-            f = f / 0.2F;
-            f = f * f * f;
-        }
 
-        if (f < 1.0F)
-        {
-            f = 1.0F;
-        }
-
-        this.rightArm.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F + (float)Math.PI) * 2.0F * limbSwingAmount * 0.5F / f;
-        this.leftArm.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F) * 2.0F * limbSwingAmount * 0.5F / f;
-        this.rightArm.rotateAngleZ = 0.0F;
-        this.leftArm.rotateAngleZ = 0.0F;
-
-        if (this.isRiding)
-        {
-            this.rightArm.rotateAngleX += -((float)Math.PI / 5F);
-            this.leftArm.rotateAngleX += -((float)Math.PI / 5F);
-        }
-
+        this.rightArm.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F + (float)Math.PI) * 2.0F * limbSwingAmount * 0.5F;
         this.rightArm.rotateAngleY = 0.0F;
         this.rightArm.rotateAngleZ = 0.0F;
+
+        this.leftArm.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F) * 2.0F * limbSwingAmount * 0.5F;
+        this.leftArm.rotateAngleZ = 0.0F;
+
 
         if (this.swingProgress > 0.0F)
         {
@@ -265,10 +242,26 @@ public class ModelHarvester extends ModelBiped {
         }
 
 
-        this.rightArm.rotateAngleZ += MathHelper.cos(ageInTicks * 0.09F) * 0.05F + 0.02F;
+        if(!harvester.isChargingAnimation()) {
+            this.rightArm.rotateAngleZ += MathHelper.cos(ageInTicks * 0.09F) * 0.05F + 0.02F;
+            this.rightArm.rotateAngleX += MathHelper.sin(ageInTicks * 0.067F) * 0.05F;
+        }
+
         this.leftArm.rotateAngleZ -= MathHelper.cos(ageInTicks * 0.09F) * 0.05F + 0.02F;
-        this.rightArm.rotateAngleX += MathHelper.sin(ageInTicks * 0.067F) * 0.05F;
         this.leftArm.rotateAngleX -= MathHelper.sin(ageInTicks * 0.067F) * 0.05F;
+
+        if(harvester.isChargingAnimation()) {
+            rightArm.rotateAngleX = 0.7417649F;
+            rightArm.rotateAngleZ = 1.003564F;
+            lowerRightArm.rotateAngleX = -2.3998277F;
+            lowerRightArm.rotateAngleY = -0.1309F;
+            lowerRightArm.rotateAngleZ = 3.14159F;
+        }
+
+        if(harvester.isCastingAnimation()){
+            leftArm.rotateAngleX = 3.7699115F;
+            lowerLeftArm.rotateAngleX = 3.7699115F/3;
+        }
 
     }
 
