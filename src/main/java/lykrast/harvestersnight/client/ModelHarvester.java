@@ -257,10 +257,16 @@ public class ModelHarvester extends ModelBiped {
             lowerRightArm.rotateAngleY = -0.1309F;
             lowerRightArm.rotateAngleZ = 3.14159F;
         }
-
         if(harvester.isCastingAnimation()){
             leftArm.rotateAngleX = 3.7699115F;
             lowerLeftArm.rotateAngleX = 3.7699115F/3;
+        }
+        if(harvester.isTauntingAnimation()){
+            leftArm.rotateAngleX = (float) (-46 * (Math.PI/180));;
+            leftArm.rotateAngleY = (float) (35 * (Math.PI/180));
+            leftArm.rotateAngleZ = (float) (-30 * (Math.PI/180));;
+
+            lowerLeftArm.rotateAngleX = (float) (-25 * (Math.PI/180));
         }
 
     }
