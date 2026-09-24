@@ -49,6 +49,10 @@ public class HarvestersNightConfig {
 	@LangKey("config." + HarvestersNight.MODID + ".laugh")
 	@Comment("Whether the Harvester laughs when it spawns")
 	public static boolean laugh = true;
+
+	@LangKey("config." + HarvestersNight.MODID + ".undead")
+	@Comment("Whether the Harvester is considered an undead mob or not")
+	public static boolean undead = true;
 	
 	@Mod.EventBusSubscriber(modid = HarvestersNight.MODID)
 	private static class EventHandler {

@@ -239,7 +239,10 @@ public class EntityHarvester extends EntityMob {
 
 	@Override
 	public EnumCreatureAttribute getCreatureAttribute() {
-		return EnumCreatureAttribute.UNDEAD;
+		if(HarvestersNightConfig.undead){
+			return EnumCreatureAttribute.UNDEAD;
+		}
+		else return EnumCreatureAttribute.UNDEFINED;
 	}
 
 	@Override
