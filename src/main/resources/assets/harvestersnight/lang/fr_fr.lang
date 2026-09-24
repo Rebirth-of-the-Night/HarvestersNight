@@ -1,5 +1,6 @@
 item.harvestersnight.harvester_scythe.name=Faux du Moissonneur
 entity.harvestersnight.harvester.name=Le Moissonneur
+entity.harvestersnight.chaff.name=La Menue Paille
 
 subtitles.harvestersnight.entity.harvester.charge=Le Moissonneur charge
 subtitles.harvestersnight.entity.harvester.spell=Le Moissonneur lance un sort

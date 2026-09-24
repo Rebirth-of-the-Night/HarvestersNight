@@ -1,5 +1,6 @@
 package lykrast.harvestersnight.common;
 
+import lykrast.harvestersnight.client.ClientProxy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +41,7 @@ public class HarvestersNight {
 	public static Logger logger = LogManager.getLogger(MODID);
 	
 	@SidedProxy(clientSide = "lykrast.harvestersnight.client.ClientProxy", serverSide = "lykrast.harvestersnight.common.CommonProxy")
-	public static CommonProxy proxy;
+	public static ClientProxy proxy;
 	
 	//Shoving everything in this class since it's not gonna be a big mod
 	public static ToolMaterial harvesterMaterial;
@@ -72,15 +73,23 @@ public class HarvestersNight {
 	
 	@SubscribeEvent
 	public static void registerEntities(RegistryEvent.Register<EntityEntry> event) {
-		EntityEntryBuilder<?> builder = EntityEntryBuilder.create()
+		EntityEntryBuilder<?> harvesterBuilder = EntityEntryBuilder.create()
 				.entity(EntityHarvester.class)
 				.name(MODID + ".harvester")
 				.id(new ResourceLocation(MODID, "harvester"), 1)
 				.tracker(64, 3, true)
 				.egg(0x764F29, 0xFFD108);
-		if (HarvestersNightConfig.harvesterWeight > 0) builder.spawn(EnumCreatureType.MONSTER, HarvestersNightConfig.harvesterWeight, 1, 1, ForgeRegistries.BIOMES.getValuesCollection());
-		event.getRegistry().register(builder.build());
-		
+		if (HarvestersNightConfig.harvesterWeight > 0) harvesterBuilder.spawn(EnumCreatureType.MONSTER, HarvestersNightConfig.harvesterWeight, 1, 1, ForgeRegistries.BIOMES.getValuesCollection());
+		event.getRegistry().register(harvesterBuilder.build());
+
+		EntityEntryBuilder<?> chaffBuilder = EntityEntryBuilder.create()
+				.entity(EntityChaff.class)
+				.name(MODID + ".chaff")
+				.id(new ResourceLocation(MODID, "chaff"), 2)
+				.tracker(64, 3, true)
+				.egg(0x764F29, 0xFFD108);
+		event.getRegistry().register(chaffBuilder.build());
+
 		LootTableList.register(EntityHarvester.LOOT);
 	}
 	

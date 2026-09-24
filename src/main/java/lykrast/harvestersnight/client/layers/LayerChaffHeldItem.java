@@ -1,4 +1,4 @@
-package lykrast.harvestersnight.client;
+package lykrast.harvestersnight.client.layers;
 
 import lykrast.harvestersnight.common.EntityHarvester;
 import net.minecraft.client.Minecraft;
@@ -15,11 +15,11 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class LayerHarvesterHeldItem implements LayerRenderer<EntityLivingBase> {
+public class LayerChaffHeldItem implements LayerRenderer<EntityLivingBase> {
 
     protected final RenderLivingBase<?> livingEntityRenderer;
 
-    public LayerHarvesterHeldItem(RenderLivingBase<?> livingEntityRendererIn) {
+    public LayerChaffHeldItem(RenderLivingBase<?> livingEntityRendererIn) {
         this.livingEntityRenderer = livingEntityRendererIn;
     }
 
@@ -40,37 +40,21 @@ public class LayerHarvesterHeldItem implements LayerRenderer<EntityLivingBase> {
 
     private void renderHeldItem(EntityLivingBase entityIn, ItemStack heldItem, ItemCameraTransforms.TransformType cameraTransform, EnumHandSide handSide)
     {
-        EntityHarvester harvester = (EntityHarvester)entityIn;
         if (!heldItem.isEmpty())
         {
-            if(harvester.isChargingAnimation()){
-                GlStateManager.pushMatrix();
-                this.translateToHand(handSide);
-                GlStateManager.rotate(90.0F, 1.0F, 0.0F, 0.0F);
-                GlStateManager.rotate(0.0F, 0.0F, 1.0F, 0.0F);
-                GlStateManager.rotate(-15.0F, 0.0F, 0.0F, 1.0F);
-                boolean flag = handSide == EnumHandSide.LEFT;
-                GlStateManager.translate(-0.3F, 0.75F, -1.3F);
-                Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, flag);
-                GlStateManager.popMatrix();
-            }
-            else {
-                GlStateManager.pushMatrix();
-                this.translateToHand(handSide);
-                GlStateManager.rotate(-195.2506F, 1.0F, 0.0F, 0.0F);
-                GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-                GlStateManager.rotate(-15.0F, 0.0F, 0.0F, 1.0F);
-                boolean flag = handSide == EnumHandSide.LEFT;
-                GlStateManager.translate(0.1F, -0.5F, -0.45F);
-                Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, flag);
-                GlStateManager.popMatrix();
-            }
+            GlStateManager.pushMatrix();
+            this.translateToHand(handSide);
+            GlStateManager.rotate(-90.0F, 1.0F, 0.0F, 0.0F);
+            GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
+            GlStateManager.translate(1/16F, 0.0F, -0.25F);
+            Minecraft.getMinecraft().getItemRenderer().renderItemSide(entityIn, heldItem, cameraTransform, false);
+            GlStateManager.popMatrix();
         }
     }
 
-    protected void translateToHand(EnumHandSide p_191361_1_)
+    protected void translateToHand(EnumHandSide handSide)
     {
-        ((ModelBiped) this.livingEntityRenderer.getMainModel()).postRenderArm(0.0625F, p_191361_1_);
+        ((ModelBiped) this.livingEntityRenderer.getMainModel()).postRenderArm(0.0625F, handSide);
     }
 
     @Override

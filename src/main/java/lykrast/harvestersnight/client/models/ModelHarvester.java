@@ -1,10 +1,9 @@
-package lykrast.harvestersnight.client;// Made with Blockbench 5.2.1
+package lykrast.harvestersnight.client.models;// Made with Blockbench 5.2.1
 // Exported for Minecraft version 1.7 - 1.12
 // Paste this class into your mod and generate all required imports
 
 
 import lykrast.harvestersnight.common.EntityHarvester;
-import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.ModelBox;
 import net.minecraft.client.model.ModelRenderer;
@@ -278,7 +277,7 @@ public class ModelHarvester extends ModelBiped {
 
     protected ModelRenderer getArmForSide(EnumHandSide side)
     {
-        return side == EnumHandSide.LEFT ? this.leftArm : this.rightArm;
+        return side == EnumHandSide.LEFT ? this.rightArm : this.rightArm;
     }
 
     protected EnumHandSide getMainHand(Entity entityIn)

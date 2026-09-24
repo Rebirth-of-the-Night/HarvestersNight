@@ -1,12 +1,11 @@
-package lykrast.harvestersnight.client;
+package lykrast.harvestersnight.client.render;
 
+import lykrast.harvestersnight.client.layers.LayerHarvesterHeldItem;
+import lykrast.harvestersnight.client.models.ModelHarvester;
 import lykrast.harvestersnight.common.EntityHarvester;
 import lykrast.harvestersnight.common.HarvestersNight;
-import net.minecraft.client.renderer.entity.RenderBiped;
 import net.minecraft.client.renderer.entity.RenderLiving;
-import net.minecraft.client.renderer.entity.RenderLivingBase;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.renderer.entity.layers.LayerHeldItem;
 import net.minecraft.util.ResourceLocation;
 
 public class RenderHarvester extends RenderLiving<EntityHarvester> {

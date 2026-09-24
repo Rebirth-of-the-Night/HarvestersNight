@@ -57,6 +57,7 @@ public class EntityHarvester extends EntityMob {
 	private float circleSpeed = 1;
 	private float cooldownSpeed = 1;
 	private float tauntChance = 1;
+	private boolean phase2 = false;
 
 
 	public EntityHarvester(World worldIn) {
@@ -152,7 +153,17 @@ public class EntityHarvester extends EntityMob {
 			circleSpeed = 0.6F;
 			cooldownSpeed = 0.5F;
 			tauntChance = 0.7F;
+			phase2 = true;
 		}
+		else{
+			chargeMultiplier = 1;
+			fangSpeed = 1;
+			fangDuration = 1;
+			circleSpeed = 1;
+			cooldownSpeed = 1;
+			tauntChance = 1;
+		}
+				
 		super.onLivingUpdate();
 	}
 
@@ -485,7 +496,7 @@ public class EntityHarvester extends EntityMob {
 				harvester.resetAnimation();
 				harvester.setMoveVertical(0);
 			}
-			if (time <= -100 * (harvester.cooldownSpeed * 1.5)){
+			if (time <= -80 * (harvester.cooldownSpeed * 1.5)){
 				harvester.setIdle();
 			}
 		}
@@ -609,6 +620,7 @@ public class EntityHarvester extends EntityMob {
 		private int phase;
 		private int circles;
 		private float time;
+		private boolean summoning = false;
 
 		public AICircleAttack(EntityHarvester harvester) {
 			setMutexBits(1);
@@ -638,6 +650,7 @@ public class EntityHarvester extends EntityMob {
 			harvester.setMoveForward(0);
 			harvester.setCircling();
 			time = 30 * harvester.cooldownSpeed;
+			summoning = (harvester.phase2 && (harvester.rand.nextDouble()<=0.4));
 			phase = 0;
 		}
 
@@ -648,6 +661,7 @@ public class EntityHarvester extends EntityMob {
 			time = 0;
 			phase = 0;
 			circles = 0;
+			summoning = false;
 		}
 
 		@Override
@@ -657,18 +671,29 @@ public class EntityHarvester extends EntityMob {
 			//Attack
 			if (phase == 1 && time % (30 * harvester.circleSpeed) == 0) {
 				if (target != null && target.isEntityAlive()) {
-					double radius;
-					double yMin = target.posY;
-					float f = (float)MathHelper.atan2(target.posZ - harvester.posZ, target.posX - harvester.posX);
-					radius = 4 - circles;
+					if(!summoning) {
+						double radius;
+						double yMin = target.posY;
+						float f = (float) MathHelper.atan2(target.posZ - harvester.posZ, target.posX - harvester.posX);
+						radius = 4 - circles;
 
-					for(int i = 1; i < 20; i++){
-						double x = radius * cos(i*18);
-						double z = radius * sin(i*18);
-						spawnFangs(target.posX + x, target.posZ + z, yMin, target.posY, f, 10);
+						for (int i = 1; i < 20; i++) {
+							double x = radius * cos(i * 18);
+							double z = radius * sin(i * 18);
+							spawnFangs(target.posX + x, target.posZ + z, yMin, target.posY, f, 10);
+						}
+						circles++;
 					}
-
-					circles++;
+					else{
+						BlockPos blockpos = (new BlockPos(target)).add(2 + harvester.rand.nextInt(3), 1, 2 + harvester.rand.nextInt(3));
+						EntityChaff entityChaff = new EntityChaff(harvester.world);
+						entityChaff.moveToBlockPosAndAngles(blockpos, 0.0F, 0.0F);
+						entityChaff.onInitialSpawn(harvester.world.getDifficultyForLocation(blockpos), (IEntityLivingData)null);
+						entityChaff.setOwner(harvester);
+						entityChaff.setBoundOrigin(blockpos);
+						entityChaff.setLimitedLife(300);
+						harvester.world.spawnEntity(entityChaff);
+					}
 				}
 			}
 			//Change phase
@@ -754,7 +779,7 @@ public class EntityHarvester extends EntityMob {
 			if(harvester.rand.nextDouble() < harvester.tauntChance){
 				harvester.setTaunting();
 				harvester.setTauntingAnimation();
-				time = 200;
+				time = 160;
 			}
 		}
 
@@ -769,8 +794,10 @@ public class EntityHarvester extends EntityMob {
 		@Override
 		public void updateTask() {
 			EntityLivingBase target = harvester.getAttackTarget();
-			if(time % 50 == 0){
+			if(time % 40 == 0){
 				harvester.teleportRandomRadius(4, 3);
+			}
+			if(time % 80 == 0){
 				harvester.playSound(HarvestersNight.harvesterSpawn, 0.8F, (float) (1.0 * (harvester.rand.nextDouble()+0.5)));
 			}
 			time--;

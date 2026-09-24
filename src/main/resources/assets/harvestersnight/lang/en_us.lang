@@ -1,5 +1,6 @@
 item.harvestersnight.harvester_scythe.name=The Harvester's Scythe
 entity.harvestersnight.harvester.name=The Harvester
+entity.harvestersnight.chaff.name=Chaff
 
 subtitles.harvestersnight.entity.harvester.charge=The Harvester charges
 subtitles.harvestersnight.entity.harvester.spell=The Harvester uses magic
