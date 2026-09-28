@@ -3,6 +3,10 @@ package lykrast.harvestersnight.common;
 import javax.annotation.Nullable;
 
 
+import net.minecraft.entity.boss.EntityWither;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.text.TextComponentString;
 import org.apache.commons.lang3.ArrayUtils;
 
 import net.minecraft.block.state.IBlockState;
@@ -48,7 +52,7 @@ public class EntityHarvester extends EntityMob {
     protected static final DataParameter<Integer> CURRENT_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
 	protected static final DataParameter<Integer> PREV_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
 	protected static final DataParameter<Integer> ANIM_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
-	protected static final DataParameter<Integer> TAUNT_STATE = EntityDataManager.createKey(EntityHarvester.class, DataSerializers.VARINT);
+
 
 	private final BossInfoServer bossInfo = new BossInfoServer(getDisplayName(), BossInfo.Color.YELLOW, BossInfo.Overlay.PROGRESS);
 	private float chargeMultiplier = 1;
@@ -76,7 +80,6 @@ public class EntityHarvester extends EntityMob {
 		tasks.addTask(3, new AIChargeAttack(this));
         tasks.addTask(4, new AIClawAttack(this));
         tasks.addTask(5, new AITaunt(this));
-		//tasks.addTask(6, new AISummon(this));
         tasks.addTask(9, new EntityAIWatchClosest(this, EntityPlayer.class, 3.0F, 1.0F));
         tasks.addTask(10, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
     	targetTasks.addTask(1, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, false));
@@ -97,8 +100,7 @@ public class EntityHarvester extends EntityMob {
         dataManager.register(CURRENT_STATE, -1);
 		dataManager.register(PREV_STATE, 3);
 		dataManager.register(ANIM_STATE, -1);
-		dataManager.register(TAUNT_STATE, 0);
-    }
+	}
 
 	@Override
 	public void move(MoverType type, double x, double y, double z) {
@@ -163,6 +165,13 @@ public class EntityHarvester extends EntityMob {
 			cooldownSpeed = 1;
 			tauntChance = 1;
 		}
+		if (this.world.isRemote) {
+			if (this.isChargingAnimation()) {
+				for (int i = 0; i < 4; ++i) {
+					this.world.spawnParticle(EnumParticleTypes.CRIT, this.posX + (this.rand.nextDouble() - 0.5D) * (double) this.width, this.posY + this.rand.nextDouble() * (double) this.height - 0.25D, this.posZ + (this.rand.nextDouble() - 0.5D) * (double) this.width, (this.rand.nextDouble() - 0.5D) * 0.5D, -this.rand.nextDouble(), (this.rand.nextDouble() - 0.5D) * 0.5D);
+				}
+			}
+		}
 				
 		super.onLivingUpdate();
 	}
@@ -194,11 +203,10 @@ public class EntityHarvester extends EntityMob {
     @Nullable
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata) {
 		setEquipmentBasedOnDifficulty(difficulty);
-		//setEnchantmentBasedOnDifficulty(difficulty);
-
+		setMoveVertical(0.1F);
+		setPositionAndUpdate(this.posX, this.posY + 20.0, this.posZ);
         if (HarvestersNightConfig.lightning) world.addWeatherEffect(new EntityLightningBolt(world, posX, posY, posZ, true));
         if (HarvestersNightConfig.laugh) playSound(HarvestersNight.harvesterSpawn, 8, 1);
-
 		return super.onInitialSpawn(difficulty, livingdata);
 	}
 
@@ -249,6 +257,8 @@ public class EntityHarvester extends EntityMob {
 	protected SoundEvent getAmbientSound() {
 		return SoundEvents.BLOCK_FIRE_AMBIENT;
 	}
+
+
 
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
@@ -497,7 +507,9 @@ public class EntityHarvester extends EntityMob {
 			}
 			if (!harvester.moveHelper.isUpdating()){
 				harvester.resetAnimation();
-				harvester.setMoveVertical(0);
+				if(harvester.moveVertical<=0.08F){
+					harvester.setMoveVertical(0.08F);
+				}
 			}
 			if (time <= -80 * (harvester.cooldownSpeed * 1.5)){
 				harvester.setIdle();
@@ -683,7 +695,12 @@ public class EntityHarvester extends EntityMob {
 						for (int i = 1; i < 20; i++) {
 							double x = radius * cos(i * 18);
 							double z = radius * sin(i * 18);
-							spawnFangs(target.posX + x, target.posZ + z, yMin, target.posY, f, 10);
+							spawnFangs(target.posX + x, target.posZ + z, yMin, target.posY, f, 5);
+							if(!harvester.world.isRemote && circles != 3) {
+								double x2 = (radius) * cos(i * 18);
+								double z2 = (radius) * sin(i * 18);
+								harvester.world.spawnParticle(EnumParticleTypes.PORTAL, x2, yMin + 0.1D, z2, (harvester.rand.nextDouble() - 0.5D) * 2.0D, -harvester.rand.nextDouble(), (harvester.rand.nextDouble() - 0.5D) * 2.0D);
+							}
 						}
 						circles++;
 					}
@@ -699,10 +716,11 @@ public class EntityHarvester extends EntityMob {
 					}
 				}
 			}
+
 			//Change phase
 			if (time <= 0 && phase < 3) {
 				if (phase == 0) {
-					time = 120 * harvester.circleSpeed;
+					time = (120 * harvester.circleSpeed);
 					harvester.playSound(HarvestersNight.harvesterSpell, 1.0F, 1.2F);
 					harvester.setCastingAnimation();
 				}
