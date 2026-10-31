@@ -1,7 +1,7 @@
 [
 {
   "modid": "harvestersnight",
-  "name": "Harvester's Night",
+  "name": "Harvester's Night: Resown",
   "description": "A fork of Harvester's Night/ HN RotN Edition, revamping the look and behavior of the original boss.",
   "version": "${version}",
   "mcversion": "${mcversion}",
