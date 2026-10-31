@@ -2,13 +2,13 @@
 {
   "modid": "harvestersnight",
   "name": "Harvester's Night",
-  "description": "Entry for MMD Spooky Jam 2018. Fight the Harvester when its night comes.",
+  "description": "A fork of Harvester's Night/ HN RotN Edition, revamping the look and behavior of the original boss.",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",
   "updateUrl": "",
-  "authorList": ["Lykrast"],
-  "credits": "Team Fortress 2 for the Merasmus sounds, Thermal Foundation for the Sickle code",
+  "authorList": ["Lykrast", "Asterixx", "ProvidenceDaemon"],
+  "credits": "Team Fortress 2 for the Merasmus sounds, Thermal Foundation for the Sickle code. Fork Credits: Thank you to Foreck for the chaff and harvester models and textures and SoulRacer65 for the scythe texture.",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
